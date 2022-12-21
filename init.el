@@ -10,8 +10,6 @@
 ;;(require 'profiler)
 ;;(profiler-start 'cpu)
 
-(setq warning-minimum-level :error)
-
 ;;;
 ;;; straight.el
 ;;;
@@ -95,7 +93,6 @@
     (set-language-environment "Japanese")
     (prefer-coding-system 'utf-8)
     (set-default 'buffer-file-coding-system 'utf-8)
-    (setq browse-url-browser-function 'eww-browse-url)
     )
   (leaf Fonts
     :config
@@ -117,7 +114,8 @@
       (user-mail-address . "you@example.com") ;; CHANGEME
       (inhibit-startup-message . t)
       (kinsoku-limit . 10)
-      )
+      (browse-url-browser-function . 'eww-browse-url)
+    )
     )
   )
 
@@ -162,6 +160,20 @@
       :config
       (setq mozc-candidate-style 'posframe)
       )
+    )
+  ;; ddskk
+  (leaf ddskk
+    :straight t
+    :bind
+    (("C-x C-j" . skk-mode)
+     ("C-x j"   . skk-mode))
+    )
+  ;; ddskk-posframe
+  (leaf ddskk-posframe
+    :straight t
+    :blackout t
+    :config
+    (ddskk-posframe-mode t)
     )
   )
 
@@ -285,7 +297,7 @@
 	  org-startup-folded 'content
 	  org-use-speed-commands t
 	  org-enforce-todo-dependencies t)
-    (remove "~/Org/archives" org-agenda-files) ;; CHANGEME
+    (remove (concat org-directory "/archives") org-agenda-files)
     (setq org-todo-keywords
 	  '((sequence "TODO(t)" "SOMEDAY(s)" "WAITING(w)" "|" "DONE(d)" "CANCELED(c@)")))
     (setq org-refile-targets
@@ -330,6 +342,7 @@ See `org-capture-templates' for more information."
      '((emacs-lisp . t)
        (shell . t)
        (python . t)
+       (R . t)
        (ditaa . t)
        ))
     (when (eq system-type 'windows-nt)
@@ -354,7 +367,7 @@ See `org-capture-templates' for more information."
 	  (let ((buffer (get-buffer file)))
 	    (switch-to-buffer buffer)
 	    (message "%s" file))
-	(find-file (concat "~/Org/" file)))) ;; CHANGEME
+	(find-file (concat org-directory file))))
     (global-set-key (kbd "C-M--") '(lambda () (interactive)
 				     (show-org-buffer "gtd.org")))
     (global-set-key (kbd "C-M-^") '(lambda () (interactive)
@@ -378,7 +391,7 @@ See `org-capture-templates' for more information."
     :after org
     :straight t
     :config
-    (setq org-journal-dir "~/ownCloud/Org/journal"
+    (setq org-journal-dir (concat org-directory "/journal")
 	  org-journal-enable-agenda-integration t)
     (defun org-journal-find-location ()
       ;; Open today's journal, but specify a non-nil prefix argument in order to
@@ -409,7 +422,7 @@ See `org-capture-templates' for more information."
     :after org
     :straight t
     :config
-    (setq-default org-download-image-dir "~/ownCloud/Org/pictures")
+    (setq-default org-download-image-dir (concat org-directory "/pictures"))
     )
   
   ;; toc-org
@@ -430,32 +443,28 @@ See `org-capture-templates' for more information."
     :straight t
     :require t
     )
-  )
 
-;;;
-;;; org2blog
-;;;
-(leaf org2blog
-  :after org
-  :straight (org2blog :type git :host github :repo "sachac/org2blog")
-  :leaf-autoload org2blog-autoloads
-  :commands org2blog-user-login
-  ;;  :require t
-  :config
-  (setq org2blog/wp-blog-alist
-        `(("wp"
-           :url "https://www.example.com/xmlrpc.php" ;; CHANGEME
-           :username ,(car (auth-source-user-and-password "wordpress")) ;; CHANGEME
-           :password ,(cadr (auth-source-user-and-password "wordpress")) ;; CHANGEME
-	   )
-	  ))
-  (setq org2blog/wp-buffer-template
-	"#+TITLE: 
+  ;; org2blog
+  (leaf org2blog
+    :after org
+    :straight (org2blog :type git :host github :repo "sachac/org2blog")
+    :leaf-autoload org2blog-autoloads
+    :commands org2blog-user-login
+    :config
+    (setq org2blog/wp-blog-alist
+          `(("wp"
+             :url "https://www.example.com/xmlrpc.php" ;; CHANGEME
+             :username ,(car (auth-source-user-and-password "wordpress")) ;; CHANGEME
+             :password ,(cadr (auth-source-user-and-password "wordpress")) ;; CHANGEME
+	     )
+	    ))
+    (setq org2blog/wp-buffer-template
+	  "#+TITLE: 
 #+CATEGORY: 
 #+TAGS: 
 #+OPTIONS:
 #+PERMALINK: \n")
-  )
+    )
 
 ;; ;; org-re-reveal
 ;; (when (eq system-type 'windows-nt)
@@ -466,133 +475,181 @@ See `org-capture-templates' for more information."
 ;;     (setq org-re-reveal-root "file:///c:/Users/mhatta/ownCloud/reveal.js"))
 ;;   )
 
-;;;
-;;; org-roam
-;;;
-(leaf org-roam
-  :after org
-  :straight t
-  :init
-  ;;  (org-roam-db-update-method . 'immediate)
-  (setq org-roam-v2-ack t)
-  (setq org-roam-directory "~/ownCloud/Org/org-roam/")
-  (setq org-roam-index-file "~/ownCloud/Org/org-roam/Index.org")
-  :custom
-  (org-roam-db-location . "~/.emacs.d/org-roam.db")
-  :hook
-;;  (after-init . org-roam-mode)
-  :bind
-  ((:org-roam-mode-map
-    ("C-c n l" . org-roam)
-    ("C-c n f" . org-roam-find-file)
-    ("C-c n g" . org-roam-graph))
-   (:org-mode-map
-    ("C-c n i" . org-roam-insert)
-    ("C-c n I" . org-roam-insert-immediate)))
-  ;; :bind (("C-c n l" . org-roam-buffer-toggle)
-  ;; 	 ("C-c n f" . org-roam-node-find)
-  ;; 	 ("C-c n g" . org-roam-graph)
-  ;; 	 ("C-c n i" . org-roam-node-insert)
-  ;; 	 ("C-c n c" . org-roam-capture)
-  ;; 	 ("C-c n j" . org-roam-dailies-capture-today))
+  ;; org-roam
+  (leaf org-roam
+    :after org
+    :straight t
+    :init
+    ;;  (org-roam-db-update-method . 'immediate)
+    (setq org-roam-v2-ack t)
+    (setq org-roam-directory "~/ownCloud/Org/org-roam/")
+    (setq org-roam-index-file "~/ownCloud/Org/org-roam/Index.org")
+    :custom
+    (org-roam-db-location . "~/.emacs.d/org-roam.db")
+    :hook
+    ;;  (after-init . org-roam-mode)
+    :bind
+    ((:org-roam-mode-map
+      ("C-c n l" . org-roam)
+      ("C-c n f" . org-roam-find-file)
+      ("C-c n g" . org-roam-graph))
+     (:org-mode-map
+      ("C-c n i" . org-roam-insert)
+      ("C-c n I" . org-roam-insert-immediate)))
+    ;; :bind (("C-c n l" . org-roam-buffer-toggle)
+    ;; 	 ("C-c n f" . org-roam-node-find)
+    ;; 	 ("C-c n g" . org-roam-graph)
+    ;; 	 ("C-c n i" . org-roam-node-insert)
+    ;; 	 ("C-c n c" . org-roam-capture)
+    ;; 	 ("C-c n j" . org-roam-dailies-capture-today))
+    :config
+    (org-roam-setup)
+    (org-roam-db-autosync-mode)
+    (when (eq system-type 'windows-nt)  
+      (setq org-roam-graph-viewer
+	    (lambda (file)
+	      (let ((org-roam-graph-viewer "c:/Program Files/Mozilla Firefox/firefox.exe"))
+		(org-roam-graph--open (concat "file:///" file))))))
+    )
+  
+  ;; (use-package org-roam-ui
+  ;;   :straight
+  ;;     (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
+  ;;     :after org-roam
+  ;; ;;    :hook
+  ;; ;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
+  ;; ;;         a hookable mode anymore, you're advised to pick something yourself
+  ;; ;;         if you don't care about startup time, use
+  ;; ;;  :hook (after-init . org-roam-ui-mode)
+  ;;     :config
+  ;;     (setq org-roam-ui-sync-theme t
+  ;;           org-roam-ui-follow t
+  ;;           org-roam-ui-update-on-save t
+  ;;           org-roam-ui-open-on-start t))
+
+)
+
+(leaf Modes
   :config
-  (org-roam-setup)
-  (org-roam-db-autosync-mode)
-  (when (eq system-type 'windows-nt)  
-    (setq org-roam-graph-viewer
-	  (lambda (file)
-	    (let ((org-roam-graph-viewer "c:/Program Files/Mozilla Firefox/firefox.exe"))
-	      (org-roam-graph--open (concat "file:///" file))))))
+  ;; rainbow-mode
+  (leaf rainbow-mode
+    :ensure t
+    :leaf-defer t
+    :hook
+    (web-mode-hook . rainbow-mode)
+    )
+  ;; Markdown
+  (leaf Markdown
+    :config
+    ;; markdown-mode
+    (leaf markdown-mode
+      :straight t
+      :leaf-defer t
+      :mode ("\\.md\\'" . gfm-mode)
+      )
+    ;; markdown-preview-mode
+    (leaf markdown-preview-mode
+      :straight t
+      )
+    )
+
   )
 
-;; (use-package org-roam-ui
-;;   :straight
-;;     (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
-;;     :after org-roam
-;; ;;    :hook
-;; ;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
-;; ;;         a hookable mode anymore, you're advised to pick something yourself
-;; ;;         if you don't care about startup time, use
-;; ;;  :hook (after-init . org-roam-ui-mode)
-;;     :config
-;;     (setq org-roam-ui-sync-theme t
-;;           org-roam-ui-follow t
-;;           org-roam-ui-update-on-save t
-;;           org-roam-ui-open-on-start t))
-
-;;;
-;;; easy-hugo
-;;;
-(leaf easy-hugo
-  :straight t
+(leaf Tools
   :config
-  (setq easy-hugo-basedir "~/Hugo") ;; CHANGEME
-  (setq easy-hugo-url "https://www.example.com") ;; CHANGEME
-  (setq easy-hugo-bloglist
-	'(((easy-hugo-basedir . "https://www2.example.com") ;; CHANGEME
-	   (easy-hugo-url . "https://www2.example.com"))))
+  ;; smartparens
+  (leaf smartparens
+    :straight t
+    :blackout t
+    :require smartparens-config
+    :hook
+    (prog-mode-hook . turn-on-smartparens-mode)
+    :config
+    (show-smartparens-global-mode t))
+  
+  ;; rainbow-delimiters
+  (leaf rainbow-delimiters
+    :straight t
+    :hook
+    (prog-mode-hook . rainbow-delimiters-mode)
+    )
+
+  ;; beacon
+  (leaf beacon
+    :straight t
+    :blackout t
+    :config
+    (beacon-mode t)
+    )
+  
+  ;; google-this
+  (leaf google-this
+    :straight t
+    :bind
+    ("M-s g" . google-this-noconfirm)
+    )
+
+  ;; free-keys
+  (leaf free-keys
+    :straight t
+    )
+
+  ;; popwin
+  (leaf popwin
+    :straight t
+    :config
+    (popwin t)
+    )
+
+  ;; ripgrep
+  (leaf ripgrep
+    :straight t
+    :leaf-defer t
+    :bind
+    ("M-s r" . ripgrep-regexp)
+    )
+
+  ;; projectile
+  (leaf projectile
+    :straight t
+    :blackout t
+    :config
+    (projectile-mode t)
+    )
+
+  ;; yasnippet
+  (leaf yasnippet
+    :straight t
+    :blackout yas-minor-mode
+    :commands yas-global-mode
+    :hook ((after-init-hook . yas-global-mode))
+    :custom ((yas-snippet-dirs . '("~/.emacs.d/snippets")))
+    )
+  
+  ;; restart-emacs
+  (leaf restart-emacs
+    :straight t
+    )
+  
+  ;; magit
+  (leaf magit
+    :straight t
+    :bind
+    ("C-x g" . magit-status)
+    )
+
+  ;; easy-hugo
+  (leaf easy-hugo
+    :straight t
+    :config
+    (setq easy-hugo-basedir "~/Hugo") ;; CHANGEME
+    (setq easy-hugo-url "https://www.example.com") ;; CHANGEME
+    (setq easy-hugo-bloglist
+	  '(((easy-hugo-basedir . "https://www2.example.com") ;; CHANGEME
+	     (easy-hugo-url . "https://www2.example.com"))))
+    )
   )
-
-;;;
-;;; smartparens
-;;;
-(leaf smartparens
-  :straight t
-  :blackout t
-  :require smartparens-config
-  :hook
-  (prog-mode-hook . turn-on-smartparens-mode)
-  :config
-  (show-smartparens-global-mode t))
-
-;;;
-;;; rainbow-delimiters
-;;;
-(leaf rainbow-delimiters
-  :straight t
-  :hook
-  (prog-mode-hook . rainbow-delimiters-mode)
-  )
-
-;;;
-;;; md4rd
-;;;
-(leaf md4rd
-  :straight t
-  :leaf-defer t
-  :config
-  (setq md4rd--oauth-access-token
-        "Token") ;; CHANGEME
-  (setq md4rd--oauth-refresh-token
-        "Token") ;; CHANGEME
-  (run-with-timer 0 3540 'md4rd-refresh-login)
-  )
-
-;;;
-;;; magit
-;;;
-(leaf magit
-  :straight t
-  :bind
-  ("C-x g" . magit-status)
-  )
-
-;;;
-;;; google-this
-;;;
-(leaf google-this
-  :straight t
-  :bind
-  ("M-s g" . google-this-noconfirm)
-  )
-
-;;;
-;;; free-keys
-;;;
-(leaf free-keys
-  :straight t
-  )
-
+  
 ;;;
 ;;; exec-path-from-shell
 ;;;
