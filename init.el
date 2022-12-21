@@ -367,7 +367,7 @@ See `org-capture-templates' for more information."
 	  (let ((buffer (get-buffer file)))
 	    (switch-to-buffer buffer)
 	    (message "%s" file))
-	(find-file (concat org-directory file))))
+	(find-file (concat org-directory "/" file))))
     (global-set-key (kbd "C-M--") '(lambda () (interactive)
 				     (show-org-buffer "gtd.org")))
     (global-set-key (kbd "C-M-^") '(lambda () (interactive)
