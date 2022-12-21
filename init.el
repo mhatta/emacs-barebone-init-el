@@ -114,7 +114,7 @@
       (user-mail-address . "you@example.com") ;; CHANGEME
       (inhibit-startup-message . t)
       (kinsoku-limit . 10)
-      (browse-url-browser-function . 'eww-browse-url)
+      ;;      (browse-url-browser-function . 'eww-browse-url)
     )
     )
   )
@@ -624,6 +624,13 @@ See `org-capture-templates' for more information."
     :commands yas-global-mode
     :hook ((after-init-hook . yas-global-mode))
     :custom ((yas-snippet-dirs . '("~/.emacs.d/snippets")))
+    )
+
+  ;; atomic-chrome
+  (leaf atomic-chrome
+    :straight t
+    :config
+    (atomic-chrome-start-server)
     )
   
   ;; restart-emacs
