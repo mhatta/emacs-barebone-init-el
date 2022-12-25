@@ -591,7 +591,7 @@ See `org-capture-templates' for more information."
     ;; Dailies
     ("C-c n j" . org-roam-dailies-capture-today)
     :config
-    (setq org-roam-directory (concat org-directory "/org-roam"))
+    (setq org-roam-directory (concat org-roam-directory "/org-roam"))
     (unless (file-exists-p org-directory)
       (make-directory org-roam-directory))
     ;; If you're using a vertical completion framework, you might want a more informative completion interface
