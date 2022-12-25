@@ -95,9 +95,9 @@
   (leaf Fonts
     :config
     (when (eq system-type 'windows-nt)
-      (set-face-attribute 'default nil :family "Consolas" :height 110)
+      (set-face-attribute 'default nil :family "Consolas" :height 120)
       (set-fontset-font 'nil 'japanese-jisx0208
-			(font-spec :family "Yu Gochic UI"))) ;; CHANGEME
+			(font-spec :family "Yu Gothic UI"))) ;; CHANGEME
     (when (eq system-type 'gnu/linux)
       ;; Install e.g. fonts-inconsolata & fonts-ipaexfont on Debian/Ubuntu
       (set-frame-font "Inconsolata-14")
@@ -108,9 +108,9 @@
     (define-key key-translation-map [?\C-h] [?\C-?])
     (column-number-mode t)
     :custom
-    '((user-full-name . "Your Name") ;; CHANGEME
-      (user-login-name . "you") ;; CHANGEME
-      (user-mail-address . "you@example.com") ;; CHANGEME
+    '((user-full-name . "Masayuki Hatta") ;; CHANGEME
+      (user-login-name . "mhatta") ;; CHANGEME
+      (user-mail-address . "mhatta@gmail.com") ;; CHANGEME
       (inhibit-startup-message . t)
       (delete-by-moving-to-trash . t)
       (kinsoku-limit . 10)
@@ -136,7 +136,7 @@
     (setq-default w32-ime-mode-line-state-indicator "[--]")
     (setq w32-ime-mode-line-state-indicator-list '("[--]" "[あ]" "[--]"))
     ;; Fonts used during henkan
-    (modify-all-frames-parameters '((ime-font . "Yu Gothic UI-11"))) ;; CHANGEME
+    (modify-all-frames-parameters '((ime-font . "Yu Gothic UI-12"))) ;; CHANGEME
     ;; IME control
     (wrap-function-to-control-ime 'universal-argument t nil)
     (wrap-function-to-control-ime 'read-string nil nil)
@@ -404,7 +404,9 @@
     :straight t
     :leaf-defer t
     :init
-    (setq org-directory "~/ownCloud/Org") ;; CHANGEME
+    (setq org-directory "~/Org") ;; CHANGEME
+    (unless (file-exists-p org-directory)
+      (make-directory org-directory))
     (defun org-buffer-files ()
       "Return list of opened Org mode buffer files."
       (mapcar (function buffer-file-name)
@@ -562,9 +564,9 @@ See `org-capture-templates' for more information."
     :config
     (setq org2blog/wp-blog-alist
           `(("wp"
-             :url "https://www.example.com/xmlrpc.php" ;; CHANGEME
-             :username ,(car (auth-source-user-and-password "wordpress")) ;; CHANGEME
-             :password ,(cadr (auth-source-user-and-password "wordpress")) ;; CHANGEME
+             :url "https://www.mhatta.org/wp/xmlrpc.php" ;; CHANGEME
+             :username ,(car (auth-source-user-and-password "wp")) ;; CHANGEME
+             :password ,(cadr (auth-source-user-and-password "wp")) ;; CHANGEME
 	     )
 	    ))
     (setq org2blog/wp-buffer-template
@@ -618,16 +620,21 @@ See `org-capture-templates' for more information."
   :config
   ;; C/C++
   (leaf cc-mode
-    :doc "major mode for editing C and similar languages"
-    :tag "builtin"
+    :straight t
+    :leaf-defer t
     :defvar (c-basic-offset)
     :bind (c-mode-base-map
-           ("C-c c" . compile))
+           ("2C-command c" . compile))
     :mode-hook
     (c-mode-hook . ((c-set-style "bsd")
                     (setq c-basic-offset 4)))
     (c++-mode-hook . ((c-set-style "bsd")
                       (setq c-basic-offset 4)))
+    )
+  ;; Python
+  (leaf python-mode
+    :straight t
+    :leaf-defer t
     )
   ;; Markdown
   (leaf Markdown
@@ -657,6 +664,7 @@ See `org-capture-templates' for more information."
 ;;;
 (leaf Flycheck
   :config
+  ;; flycheck
   (leaf flycheck
     :straight t
     :blackout t
