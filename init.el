@@ -108,9 +108,9 @@
     (define-key key-translation-map [?\C-h] [?\C-?])
     (column-number-mode t)
     :custom
-    '((user-full-name . "Masayuki Hatta") ;; CHANGEME
-      (user-login-name . "mhatta") ;; CHANGEME
-      (user-mail-address . "mhatta@gmail.com") ;; CHANGEME
+    '((user-full-name . "Your Name") ;; CHANGEME
+      (user-login-name . "yourlogin") ;; CHANGEME
+      (user-mail-address . "you@example.com") ;; CHANGEME
       (inhibit-startup-message . t)
       (delete-by-moving-to-trash . t)
       (kinsoku-limit . 10)
@@ -227,7 +227,7 @@
 	  )
     (setq completion-cycle-threshold 3)
     (setq tab-always-indent 'complete)
-    (setq corfu-popupinfo-delay 0)
+    (setq corfu-popupinfo-delay 0.3)
     (global-corfu-mode)
     (corfu-popupinfo-mode)
     :config
@@ -265,6 +265,7 @@
   ;; Dabbrev
   (leaf dabbrev
     :straight t
+    :blackout t
     ;; Swap M-/ and C-M-/
     :bind (("M-/" . dabbrev-completion)
            ("C-M-/" . dabbrev-expand))
@@ -486,8 +487,9 @@ See `org-capture-templates' for more information."
        (R . t)
        (ditaa . t)
        ))
+    ;; cf. https://tamura70.hatenadiary.org/entry/20100317/org
     (when (eq system-type 'windows-nt)
-      (setq org-ditaa-jar-path "~/ownCloud/jditaa.jar") ;; CHANGEME
+      (setq org-ditaa-jar-path "~/jditaa.jar") ;; CHANGEME
       )
     (when (eq system-type 'gnu/linux)
       (setq org-ditaa-jar-path "/usr/share/ditaa/ditaa.jar")
@@ -563,10 +565,10 @@ See `org-capture-templates' for more information."
     :commands org2blog-user-login
     :config
     (setq org2blog/wp-blog-alist
-          `(("wp"
-             :url "https://www.mhatta.org/wp/xmlrpc.php" ;; CHANGEME
-             :username ,(car (auth-source-user-and-password "wp")) ;; CHANGEME
-             :password ,(cadr (auth-source-user-and-password "wp")) ;; CHANGEME
+          `(("wordpress1"
+             :url "https://www.example.com/xmlrpc.php" ;; CHANGEME
+             :username ,(car (auth-source-user-and-password "wordpress1")) ;; CHANGEME
+             :password ,(cadr (auth-source-user-and-password "wordpress1")) ;; CHANGEME
 	     )
 	    ))
     (setq org2blog/wp-buffer-template
@@ -590,6 +592,8 @@ See `org-capture-templates' for more information."
     ("C-c n j" . org-roam-dailies-capture-today)
     :config
     (setq org-roam-directory (concat org-directory "/org-roam"))
+    (unless (file-exists-p org-directory)
+      (make-directory org-roam-directory))
     ;; If you're using a vertical completion framework, you might want a more informative completion interface
     (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
     (org-roam-db-autosync-mode)
@@ -622,14 +626,6 @@ See `org-capture-templates' for more information."
   (leaf cc-mode
     :straight t
     :leaf-defer t
-    :defvar (c-basic-offset)
-    :bind (c-mode-base-map
-           ("2C-command c" . compile))
-    :mode-hook
-    (c-mode-hook . ((c-set-style "bsd")
-                    (setq c-basic-offset 4)))
-    (c++-mode-hook . ((c-set-style "bsd")
-                      (setq c-basic-offset 4)))
     )
   ;; Python
   (leaf python-mode
@@ -754,14 +750,14 @@ See `org-capture-templates' for more information."
     :config
     (projectile-mode t)
     )
-  ;; 1yasnippet
+  ;; yasnippet
   (leaf yasnippet
     :straight t
     :blackout yas-minor-mode
     :commands yas-global-mode
     :hook ((after-init-hook . yas-global-mode))
     :custom
-    (yas-snippet-dirs . '("~/.emacs.d/yasnippets"))
+    (yas-snippet-dirs . '("~/.emacs.d/yasnippets")) ;; CHANGEME
     )
   ;; atomic-chrome
   (leaf atomic-chrome
@@ -787,7 +783,7 @@ See `org-capture-templates' for more information."
     (setq easy-hugo-url "https://www.example.com") ;; CHANGEME
     (setq easy-hugo-bloglist
 	  '(((easy-hugo-basedir . "https://www2.example.com") ;; CHANGEME
-	     (easy-hugo-url . "https://www2.example.com"))))
+	     (easy-hugo-url . "https://www2.example.com")))) ;; CHANGEME
     )
   ;; dumb-jump
   (leaf dumb-jump
