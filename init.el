@@ -4,7 +4,7 @@
 
 ;;; Commentary:
 
-;; Boilerplate configuration file for modern Emacs experience.
+;; A boilerplate configuration file for modern Emacs experience.
 
 ;;; Code:
 
@@ -574,6 +574,36 @@ See `org-capture-templates' for more information."
 #+OPTIONS:
 #+PERMALINK: \n")
     )
+  ;; org-roam
+  (leaf org-roam
+    :straight t
+    :after org
+    :bind
+    ("C-c n l" . org-roam-buffer-toggle)
+    ("C-c n f" . org-roam-node-find)
+    ("C-c n g" . org-roam-graph)
+    ("C-c n i" . org-roam-node-insert)
+    ("C-c n c" . org-roam-capture)
+    ;; Dailies
+    ("C-c n j" . org-roam-dailies-capture-today)
+    :config
+    (setq org-roam-directory (concat org-directory "/org-roam"))
+    ;; If you're using a vertical completion framework, you might want a more informative completion interface
+    (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
+    (org-roam-db-autosync-mode)
+    ;; If using org-roam-protocol
+    (require 'org-roam-protocol))
+  ;; org-roam-ui
+  (leaf org-roam-ui
+    :straight (org-roam-ui :host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
+    :after org-roam
+    :config
+    (setq org-roam-ui-sync-theme t
+          org-roam-ui-follow t
+          org-roam-ui-update-on-save t
+          org-roam-ui-open-on-start t)
+    )
+  )
 
 ;; ;; org-re-reveal
 ;; (when (eq system-type 'windows-nt)
@@ -583,59 +613,6 @@ See `org-capture-templates' for more information."
 ;;     :config
 ;;     (setq org-re-reveal-root "file:///c:/Users/mhatta/ownCloud/reveal.js"))
 ;;   )
-  ;; org-roam
-  (leaf org-roam
-    :after org
-    :straight t
-    :init
-    ;;  (org-roam-db-update-method . 'immediate)
-    (setq org-roam-v2-ack t)
-    (setq org-roam-directory "~/ownCloud/Org/org-roam/")
-    (setq org-roam-index-file "~/ownCloud/Org/org-roam/Index.org")
-    :custom
-    (org-roam-db-location . "~/.emacs.d/org-roam.db")
-    :hook
-    ;;  (after-init . org-roam-mode)
-    :bind
-    ((:org-roam-mode-map
-      ("C-c n l" . org-roam)
-      ("C-c n f" . org-roam-find-file)
-      ("C-c n g" . org-roam-graph))
-     (:org-mode-map
-      ("C-c n i" . org-roam-insert)
-      ("C-c n I" . org-roam-insert-immediate)))
-    ;; :bind (("C-c n l" . org-roam-buffer-toggle)
-    ;; 	 ("C-c n f" . org-roam-node-find)
-    ;; 	 ("C-c n g" . org-roam-graph)
-    ;; 	 ("C-c n i" . org-roam-node-insert)
-    ;; 	 ("C-c n c" . org-roam-capture)
-    ;; 	 ("C-c n j" . org-roam-dailies-capture-today))
-    :config
-    (org-roam-setup)
-    (org-roam-db-autosync-mode)
-    (when (eq system-type 'windows-nt)  
-      (setq org-roam-graph-viewer
-	    (lambda (file)
-	      (let ((org-roam-graph-viewer "c:/Program Files/Mozilla Firefox/firefox.exe"))
-		(org-roam-graph--open (concat "file:///" file))))))
-    )
-  
-  ;; (use-package org-roam-ui
-  ;;   :straight
-  ;;     (:host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
-  ;;     :after org-roam
-  ;; ;;    :hook
-  ;; ;;         normally we'd recommend hooking orui after org-roam, but since org-roam does not have
-  ;; ;;         a hookable mode anymore, you're advised to pick something yourself
-  ;; ;;         if you don't care about startup time, use
-  ;; ;;  :hook (after-init . org-roam-ui-mode)
-  ;;     :config
-  ;;     (setq org-roam-ui-sync-theme t
-  ;;           org-roam-ui-follow t
-  ;;           org-roam-ui-update-on-save t
-  ;;           org-roam-ui-open-on-start t))
-
-  )
 
 (leaf Modes
   :config
@@ -769,14 +746,12 @@ See `org-capture-templates' for more information."
     :config
     (projectile-mode t)
     )
-  ;; yasnippet
+  ;; 1yasnippet
   (leaf yasnippet
     :straight t
     :blackout yas-minor-mode
     :commands yas-global-mode
     :hook ((after-init-hook . yas-global-mode))
-    :init
-    (make-directory "~/.emacs.d/yasnippets")
     :custom
     (yas-snippet-dirs . '("~/.emacs.d/yasnippets"))
     )
@@ -821,6 +796,10 @@ See `org-capture-templates' for more information."
   ;; esup
   (leaf esup
     :straight t
+    )
+  ;; simple-httpd
+  (leaf simple-httpd
+    :straight '(simple-httpd :type git :host github :repo "skeeto/emacs-web-server")
     )
   )
 
