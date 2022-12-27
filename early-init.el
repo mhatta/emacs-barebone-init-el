@@ -11,8 +11,8 @@
 ;;;
 ;;; Profiler (start)
 ;;;
-(require 'profiler)
-(profiler-start 'cpu)
+;;(require 'profiler)
+;;(profiler-start 'cpu)
 
 ;; Prevent package.el loading packages prior to their init-file loading (for straight.el)
 (setq package-enable-at-startup nil)
