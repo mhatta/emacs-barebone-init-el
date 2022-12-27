@@ -51,6 +51,7 @@
   (leaf leaf-convert
     :straight t
     )
+
   (leaf leaf-tree
     :straight t
     :blackout t
@@ -77,8 +78,7 @@
   :leaf-defer nil
   :straight t
   :blackout t
-  :config
-  (gcmh-mode t)
+  :global-minor-mode gcmh-mode
   )
 
 ;;;
@@ -92,17 +92,26 @@
     (prefer-coding-system 'utf-8)
     (set-default 'buffer-file-coding-system 'utf-8)
     )
+
   (leaf Fonts
     :config
+    ;; unicode-fonts
+    (leaf unicode-fonts
+      :straight t
+      :config
+      (unicode-fonts-setup)
+      )
+
     (when (eq system-type 'windows-nt)
-      (set-face-attribute 'default nil :family "Consolas" :height 120)
+      (set-face-attribute 'default nil :family "Consolas" :height 120) ;; CHANGEME
       (set-fontset-font 'nil 'japanese-jisx0208
-			(font-spec :family "Yu Gothic UI"))) ;; CHANGEME
+     			(font-spec :family "Yu Gothic UI"))) ;; CHANGEME
     (when (eq system-type 'gnu/linux)
-      ;; Install e.g. fonts-inconsolata & fonts-ipaexfont on Debian/Ubuntu
-      (set-frame-font "Inconsolata-14")
+      ;; Install e.g. fonts-inconsolata & fonts-ipaexfont packages on Debian/Ubuntu
+      (set-frame-font "Inconsolata-14") ;; CHANGEME
       (set-fontset-font t 'japanese-jisx0208 (font-spec :family "IPAExGothic"))) ;; CHANGEME
     )
+
   (leaf Misc
     :config
     (define-key key-translation-map [?\C-h] [?\C-?])
@@ -114,6 +123,7 @@
       (inhibit-startup-message . t)
       (delete-by-moving-to-trash . t)
       (kinsoku-limit . 10)
+      ;; For text-only web browsing
       ;; (browse-url-browser-function . 'eww-browse-url)
       )
     )
@@ -147,6 +157,7 @@
     (wrap-function-to-control-ime 'map-y-or-n-p nil nil)
     (wrap-function-to-control-ime 'register-read-with-preview nil nil)
     )
+
   ;; Mozc (for GNU/Linux)
   (leaf mozc
     :if (eq system-type 'gnu/linux)
@@ -162,6 +173,7 @@
       (setq mozc-candidate-style 'posframe)
       )
     )
+
   ;; ddskk
   (leaf ddskk
     :straight t
@@ -176,6 +188,7 @@
 ;;;
 (leaf Looks
   :config
+
   ;; Theme (Modus)
   (leaf modus-themes
     :straight t
@@ -191,19 +204,21 @@
     (modus-themes-load-vivendi) ;; OR (modus-themes-load-operandi)
     :bind ("<f5>" . modus-themes-toggle)
     )
+
   ;; dashboard
   (leaf dashboard
     :straight t
     :config
     (dashboard-setup-startup-hook)
     )
+
   ;; all-the-icons
   (leaf all-the-icons
     :if (display-graphic-p)
     :straight t
     :config
 ;;    (all-the-icons-install-fonts)
-    )    
+    )
   :custom
   ;;  '((tool-bar-mode . nil)
   )
@@ -216,21 +231,20 @@
   ;; corfu
   (leaf corfu
     :straight (corfu :files (:defaults "extensions/*")
-                     :includes (corfu-info corfu-history corfu-popupinfo))
+                     :includes (corfu-info
+				corfu-history
+				corfu-popupinfo)
+		     )
     :init
-    (setq corfu-cycle t
-	  corfu-auto t
-	  corfu-quit-no-match 'separator
-	  corfu-scroll-margin 5
-	  corfu-preselect 'prompt
-          completion-styles '(basic)
+    (setq corfu-auto t
+	  corfu-quit-no-match t
+	  corfu-popupinfo-delay 0.3
+	  completion-cycle-threshold 3
 	  )
-    (setq completion-cycle-threshold 3)
-    (setq tab-always-indent 'complete)
-    (setq corfu-popupinfo-delay 0.3)
-    (global-corfu-mode)
-    (corfu-popupinfo-mode)
+    :global-minor-mode (global-corfu-mode corfu-popupinfo-mode)
     :config
+    (define-key corfu-map
+		(kbd "SPC") #'corfu-insert-separator)
     (defun corfu-enable-always-in-minibuffer ()
       "Enable Corfu in the minibuffer if Vertico/Mct are not active."
       (unless (or (bound-and-true-p mct--active)
@@ -241,11 +255,13 @@
                     corfu-popupinfo-delay nil)
 	(corfu-mode 1)))
     (add-hook 'minibuffer-setup-hook #'corfu-enable-always-in-minibuffer 1)
+
     (defun corfu-beginning-of-prompt ()
       "Move to beginning of completion input."
       (interactive)
       (corfu--goto -1)
       (goto-char (car completion-in-region--data)))
+
     (defun corfu-end-of-prompt ()
       "Move to end of completion input."
       (interactive)
@@ -253,6 +269,22 @@
       (goto-char (cadr completion-in-region--data)))
     (define-key corfu-map [remap move-beginning-of-line] #'corfu-beginning-of-prompt)
     (define-key corfu-map [remap move-end-of-line] #'corfu-end-of-prompt)
+
+    (add-hook 'eshell-mode-hook
+              (lambda ()
+		(setq-local corfu-auto nil)
+		(corfu-mode)))
+
+    (defun corfu-send-shell (&rest _)
+      "Send completion candidate when inside comint/eshell."
+      (cond
+       ((and (derived-mode-p 'eshell-mode) (fboundp 'eshell-send-input))
+	(eshell-send-input))
+       ((and (derived-mode-p 'comint-mode)  (fboundp 'comint-send-input))
+	(comint-send-input))))
+
+    (advice-add #'corfu-insert :after #'corfu-send-shell)
+
     ;; corfu-terminal
     (leaf corfu-terminal
       :straight '(corfu-terminal :type git :repo "https://codeberg.org/akib/emacs-corfu-terminal.git")
@@ -261,7 +293,21 @@
       (unless (display-graphic-p)
 	(corfu-terminal-mode +1))
       )
+    ;; corfu-history
+    (leaf corfu-history
+      :after corfu
+      :config
+      (with-eval-after-load 'safehist
+	(cl-pushnew 'corfu-history savehist-additional-variables))
+      (corfu-history-mode)
+      )
     )
+
+  ;; pcmpl-args
+  (leaf pcmpl-args
+    :straight t
+    )
+  
   ;; Dabbrev
   (leaf dabbrev
     :straight t
@@ -273,14 +319,17 @@
     :custom
     (dabbrev-ignored-buffer-regexps '("\\.\\(?:pdf\\|jpe?g\\|png\\)\\'"))
     )
+
   ;; vertico
   (leaf vertico
     :straight (vertico :files (:defaults "extensions/*")
-                     :includes (vertico-directory))
+                       :includes (vertico-directory)
+		       )
     :init
     (vertico-mode)
     (setq vertico-count 20)
     :config
+    ;; vertico-directory
     (leaf vertico-directory
       :straight t
       :config
@@ -289,12 +338,14 @@
       (define-key vertico-map "\d" #'vertico-directory-delete-char)
       )
     )
+
   ;; consult
   (leaf consult
     :straight t
     :bind
     (("C-s" . consult-line))
     )
+
   ;; orderless
   (leaf orderless
     :straight t
@@ -330,20 +381,23 @@
     :custom
     (completion-styles . '(orderless basic))
     )
+
   ;; marginalia
   (leaf marginalia
     :straight t
+    :global-minor-mode marginalia-mode
     :init
-    (marginalia-mode)
     (define-key minibuffer-local-map (kbd "C-M-a") #'marginalia-cycle)
     )
+
+  ;: all-the-icons-completion
   (leaf all-the-icons-completion
     :after (marginalia all-the-icons)
     :straight t
     :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
-    :init
-    (all-the-icons-completion-mode)
+    :global-minor-mode all-the-icons-completion-mode
     )
+  
   ;; cape
   (leaf cape
     :straight t
@@ -355,7 +409,13 @@
     (add-to-list 'completion-at-point-functions #'cape-abbrev)
     (add-to-list 'completion-at-point-functions #'cape-ispell)
     (add-to-list 'completion-at-point-functions #'cape-symbol)
+    ;; Silence the pcomplete capf, no errors or messages!
+    (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-silent)
+    ;; Ensure that pcomplete does not write to the buffer
+    ;; and behaves as a pure `completion-at-point-function'.
+    (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-purify)
     )
+
   ;; kind-icon
   (leaf kind-icon
     :straight t
@@ -363,6 +423,29 @@
     (setq kind-icon-default-face 'corfu-default)
     (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter)
     )
+
+  ;; embark
+  (leaf embark
+    :straight t
+    :bind
+    (("C-." . embark-act)
+     ("C-;" . embark-dwim)
+     ("C-h B" . embark-bindings))
+    :init
+    ;; Optionally replace the key help with a completing-read interface
+    (setq prefix-help-command #'embark-prefix-help-command)
+    :config
+    ;; Hide the mode line of the Embark live/completions buffers
+    (add-to-list 'display-buffer-alist
+		 '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
+                   nil
+                   (window-parameters (mode-line-format . none))))
+    (leaf embark-consult
+      :straight t
+      :hook
+      (embark-collect-mode . consult-preview-at-point-mode))
+    )
+
   ;; affe
   (leaf affe
     :straight t
@@ -376,14 +459,15 @@
             (lambda (str) (orderless--highlight affe-orderless-regexp str))))
     (setq affe-regexp-compiler #'affe-orderless-regexp-compiler)
     )
-    ;; migemo
+
+  ;; migemo
   (leaf migemo
     :if (executable-find "cmigemo")
     :straight t
     :require t
     :config
     (setq migemo-command "cmigemo"
-          migemo-options '("-q" "--emacs")
+          migemo-options '("-q" "-e")
 	  migemo-user-dictionary nil
           migemo-regex-dictionary nil
           migemo-coding-system 'utf-8-unix)
@@ -401,6 +485,7 @@
 ;;;
 (leaf Org-mode
   :config
+  ;; org
   (leaf org
     :straight t
     :leaf-defer t
@@ -474,6 +559,7 @@ See `org-capture-templates' for more information."
                    "%?\n")          ;Place the cursor here finally
                      "\n"))))
     )
+
   ;; org-babel
   (leaf ob
     :after org
@@ -486,7 +572,9 @@ See `org-capture-templates' for more information."
        (python . t)
        (R . t)
        (ditaa . t)
+       (plantuml . t)
        ))
+    ;; Ditaa jar path
     ;; cf. https://tamura70.hatenadiary.org/entry/20100317/org
     (when (eq system-type 'windows-nt)
       (setq org-ditaa-jar-path "~/jditaa.jar") ;; CHANGEME
@@ -494,7 +582,15 @@ See `org-capture-templates' for more information."
     (when (eq system-type 'gnu/linux)
       (setq org-ditaa-jar-path "/usr/share/ditaa/ditaa.jar")
       )
+    ;; PlantUML jar path
+    (when (eq system-type 'windows-nt)
+      (setq org-plantuml-jar-path "~/plantuml.jar") ;; CHANGEME
+      )
+    (when (eq system-type 'gnu/linux)
+      (setq org-plantuml-jar-path "/usr/share/plantuml/plantuml.jar")
+      )
     )
+  
   ;; org-superstar
   (leaf org-superstar
     :after org
@@ -504,6 +600,7 @@ See `org-capture-templates' for more information."
     :hook
     (org-mode-hook (lambda () (org-superstar-mode 1)))
     )
+
   ;; org-journal
   (leaf org-journal
     :after org
@@ -520,6 +617,7 @@ See `org-capture-templates' for more information."
       (goto-char (point-min))
       )
     )
+
   ;; org-cliplink
   (leaf org-cliplink
     :after org
@@ -527,6 +625,7 @@ See `org-capture-templates' for more information."
     :bind
     ("C-x p i" . org-cliplink)
     )
+
   ;; org-download
   (leaf org-download
     :after org
@@ -534,11 +633,13 @@ See `org-capture-templates' for more information."
     :config
     (setq-default org-download-image-dir (concat org-directory "/pictures"))
     )
+
   ;; org-web-tools
   (leaf org-web-tools
     :after org
     :straight t
     )
+
   ;; toc-org
   (leaf toc-org
     :after org markdown-mode
@@ -550,12 +651,21 @@ See `org-capture-templates' for more information."
     (add-hook 'markdown-mode-hook 'toc-org-mode)
     (define-key markdown-mode-map (kbd "\C-c\C-o") 'toc-org-markdown-follow-thing-at-point)
     )
+
   ;; ox-hugo
   (leaf ox-hugo
     :after ox
     :straight t
     :require t
     )
+
+  ;; ox-qmd
+  (leaf ox-qmd
+    :after ox
+    :straight t
+    :require t
+    )
+
   ;; org2blog
   (leaf org2blog
     :after org
@@ -578,6 +688,7 @@ See `org-capture-templates' for more information."
 #+OPTIONS:
 #+PERMALINK: \n")
     )
+
   ;; org-roam
   (leaf org-roam
     :straight t
@@ -598,7 +709,9 @@ See `org-capture-templates' for more information."
     (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
     (org-roam-db-autosync-mode)
     ;; If using org-roam-protocol
-    (require 'org-roam-protocol))
+    (require 'org-roam-protocol)
+    )
+
   ;; org-roam-ui
   (leaf org-roam-ui
     :straight (org-roam-ui :host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
@@ -611,14 +724,9 @@ See `org-capture-templates' for more information."
     )
   )
 
-;; ;; org-re-reveal
-;; (when (eq system-type 'windows-nt)
-;;   (use-package org-re-reveal
-;;     :after org
-;;     :defer t
-;;     :config
-;;     (setq org-re-reveal-root "file:///c:/Users/mhatta/ownCloud/reveal.js"))
-;;   )
+;;;
+;;; Modes
+;;;
 
 (leaf Modes
   :config
@@ -627,11 +735,13 @@ See `org-capture-templates' for more information."
     :straight t
     :leaf-defer t
     )
+
   ;; Python
   (leaf python-mode
     :straight t
     :leaf-defer t
     )
+
   ;; Markdown
   (leaf Markdown
     :config
@@ -646,6 +756,7 @@ See `org-capture-templates' for more information."
       :straight t
       )
     )
+
   ;; rainbow-mode
   (leaf rainbow-mode
     :straight t
@@ -664,26 +775,42 @@ See `org-capture-templates' for more information."
   (leaf flycheck
     :straight t
     :blackout t
-    :hook (prog-mode-hook . flycheck-mode)
+    :hook
+    (prog-mode-hook . flycheck-mode)
     :custom ((flycheck-display-errors-delay . 0.3)
              (flycheck-indication-mode . 'left-margin))
     :config
     (add-hook 'flycheck-mode-hook #'flycheck-set-indication-mode)
-    (leaf flycheck-inline
+    (leaf flycheck-posframe
       :straight t
-      :hook (flycheck-mode-hook . flycheck-inline-mode))
+      :hook (flycheck-mode-hook . flycheck-posframe-mode)
+      )
+    :global-minor-mode global-flycheck-mode
     )
+  ;; checker for textlint
+  (flycheck-define-checker textlint
+    "A linter for prose."
+    :command ("textlint" "--format" "unix" source-inplace)
+    :error-patterns
+    ((warning line-start (file-name) ":" line ":" column ": "
+              (id (one-or-more (not (any " "))))
+              (message (one-or-more not-newline)
+                       (zero-or-more "\n" (any " ") (one-or-more not-newline)))
+              line-end))
+    :modes (text-mode markdown-mode gfm-mode org-mode))
   )
-
+  
 ;;;
 ;;; Tree-sitter
 ;;;
 (leaf Tree-sitter
+  ;; tree-sitter
   (leaf tree-sitter
     :straight t
     )
   (leaf tree-sitter-langs
-    :straight t)
+    :straight t
+    )
   )
 
 ;;;
@@ -698,28 +825,30 @@ See `org-capture-templates' for more information."
     :require smartparens-config
     :hook
     (prog-mode-hook . turn-on-smartparens-mode)
-    :config
-    (show-smartparens-global-mode t)
+    :global-minor-mode show-smartparens-global-mode
     )
+
   ;; rainbow-delimiters
   (leaf rainbow-delimiters
     :straight t
     :hook
     (prog-mode-hook . rainbow-delimiters-mode)
     )
+
   ;; beacon
   (leaf beacon
     :straight t
     :blackout t
-    :config
-    (beacon-mode t)
+    :global-minor-mode beacon-mode
     )
+
   ;; google-this
   (leaf google-this
     :straight t
     :bind
     ("M-s g" . google-this-noconfirm)
     )
+
   ;; which-key
   (leaf which-key
     :straight t
@@ -727,22 +856,25 @@ See `org-capture-templates' for more information."
     :config
     (which-key-mode)
     )
+
   ;; free-keys
   (leaf free-keys
     :straight t
     )
+
   ;; popwin
   (leaf popwin
     :straight t
-    :config
-    (popwin-mode 1)
+    :global-minor-mode popwin-mode
     )
+
   ;; ripgrep
   (leaf ripgrep
     :straight t
     :bind
     ("M-s r" . ripgrep-regexp)
     )
+
   ;; projectile
   (leaf projectile
     :straight t
@@ -750,31 +882,36 @@ See `org-capture-templates' for more information."
     :config
     (projectile-mode t)
     )
+
   ;; yasnippet
   (leaf yasnippet
     :straight t
     :blackout yas-minor-mode
     :commands yas-global-mode
-    :hook ((after-init-hook . yas-global-mode))
+    :hook (after-init-hook . yas-global-mode)
     :custom
     (yas-snippet-dirs . '("~/.emacs.d/yasnippets")) ;; CHANGEME
     )
+
   ;; atomic-chrome
   (leaf atomic-chrome
     :straight t
     :config
     (atomic-chrome-start-server)
     )
+
   ;; restart-emacs
   (leaf restart-emacs
     :straight t
     )
+
   ;; magit
   (leaf magit
     :straight t
     :bind
     ("C-x g" . magit-status)
     )
+
   ;; easy-hugo
   (leaf easy-hugo
     :straight t
@@ -785,22 +922,31 @@ See `org-capture-templates' for more information."
 	  '(((easy-hugo-basedir . "https://www2.example.com") ;; CHANGEME
 	     (easy-hugo-url . "https://www2.example.com")))) ;; CHANGEME
     )
+
   ;; dumb-jump
   (leaf dumb-jump
     :straight t
     :config
     (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
     )
+
   ;; recentf
   (leaf recentf
     :straight t
-    :config
-    (recentf-mode t)
+    :global-minor-mode recentf-mode
     )
+
+  ;; savehist
+  (leaf savehist
+    :straight t
+    :global-minor-mode savehist-mode
+    )
+  
   ;; esup
   (leaf esup
     :straight t
     )
+
   ;; simple-httpd
   (leaf simple-httpd
     :straight '(simple-httpd :type git :host github :repo "skeeto/emacs-web-server")
@@ -824,7 +970,7 @@ See `org-capture-templates' for more information."
       (setq frame-title-format server-name)))
   (my--server-start)
 )
-  
+
 ;;;
 ;;; exec-path-from-shell
 ;;;
@@ -846,6 +992,7 @@ See `org-capture-templates' for more information."
     :straight '(word-count :type git :host github
 			   :repo "mhatta/word-count-mode")
     )
+
   ;; lookup-el
   (leaf lookup
     :leaf-defer t
