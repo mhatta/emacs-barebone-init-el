@@ -72,6 +72,20 @@
   )
 
 ;;;
+;;; Defer loading several libraries (for speeding up)
+;;;
+(leaf Libraries
+  :config
+  (leaf cl-lib
+    :leaf-defer t
+    )
+  (leaf dash
+    :straight t
+    :leaf-defer t
+    )
+  )
+
+;;;
 ;;; Garbage Collector Magic Hack
 ;;;
 (leaf gcmh
@@ -197,14 +211,19 @@
     (setq modus-themes-italic-constructs t
           modus-themes-bold-constructs nil
           modus-themes-region '(bg-only no-extend))
-    ;; Load the theme files before enabling a theme
-    (modus-themes-load-themes)
     :config
-    ;; Load the theme of your choice:
-    (modus-themes-load-vivendi) ;; OR (modus-themes-load-operandi)
+    ;; Load the theme of your widget-choice-match
+    (load-theme 'modus-vivendi :no-confirm) ;; OR modus-operandi
     :bind ("<f5>" . modus-themes-toggle)
     )
 
+  ;; Theme ([]zenburn)
+  (leaf zenburn-theme
+    :straight t
+    :config
+    (load-theme 'zenburn t)
+    )
+  
   ;; dashboard
   (leaf dashboard
     :straight t
@@ -220,7 +239,10 @@
 ;;    (all-the-icons-install-fonts)
     )
   :custom
+  ;; No tool bar
   ;;  '((tool-bar-mode . nil)
+  ;; No scroll bar
+  ;; (set-scroll-bar-mode nil)
   )
 
 ;;;
@@ -702,7 +724,7 @@ See `org-capture-templates' for more information."
     ;; Dailies
     ("C-c n j" . org-roam-dailies-capture-today)
     :config
-    (setq org-roam-directory (concat org-roam-directory "/org-roam"))
+    (setq org-roam-directory (concat org-directory "/org-roam"))
     (unless (file-exists-p org-directory)
       (make-directory org-roam-directory))
     ;; If you're using a vertical completion framework, you might want a more informative completion interface
@@ -757,10 +779,27 @@ See `org-capture-templates' for more information."
       )
     )
 
+  ;; web-mode
+  (leaf web-mode
+    :straight t
+    :leaf-defer t
+    :after flycheck
+    :defun flycheck-add-mode
+    :mode (("\\.html?\\'" . web-mode)
+           ("\\js\\'" . web-mode)
+           ("\\.jscss\\'" . web-mode)
+           ("\\.css\\'" . web-mode)
+           ("\\.scss\\'" . web-mode)
+           ("\\.xml\\'" . web-mode))
+    :config
+    (flycheck-add-mode 'javascript-eslint 'web-mode)
+    )
+  
   ;; rainbow-mode
   (leaf rainbow-mode
     :straight t
     :leaf-defer t
+    :blackout t
     :hook
     (web-mode-hook . rainbow-mode)
     )
@@ -781,11 +820,14 @@ See `org-capture-templates' for more information."
              (flycheck-indication-mode . 'left-margin))
     :config
     (add-hook 'flycheck-mode-hook #'flycheck-set-indication-mode)
-    (leaf flycheck-posframe
-      :straight t
-      :hook (flycheck-mode-hook . flycheck-posframe-mode)
-      )
     :global-minor-mode global-flycheck-mode
+    )
+  (leaf flycheck-posframe
+    :straight t
+    :after flycheck
+    :hook (flycheck-mode-hook . flycheck-posframe-mode)
+    :config
+    (flycheck-posframe-configure-pretty-defaults)
     )
   ;; checker for textlint
   (flycheck-define-checker textlint
@@ -797,7 +839,7 @@ See `org-capture-templates' for more information."
               (message (one-or-more not-newline)
                        (zero-or-more "\n" (any " ") (one-or-more not-newline)))
               line-end))
-    :modes (text-mode markdown-mode gfm-mode org-mode))
+    :modes (text-mode markdown-mode gfm-mode org-mode web-mode))
   )
   
 ;;;
@@ -923,6 +965,13 @@ See `org-capture-templates' for more information."
 	     (easy-hugo-url . "https://www2.example.com")))) ;; CHANGEME
     )
 
+  ;; smart-jump
+  (leaf smart-jump
+    :straight t
+    :config
+    (smart-jump-setup-default-registers)
+    )
+  
   ;; dumb-jump
   (leaf dumb-jump
     :straight t
@@ -947,10 +996,11 @@ See `org-capture-templates' for more information."
     :straight t
     )
 
-  ;; simple-httpd
-  (leaf simple-httpd
-    :straight '(simple-httpd :type git :host github :repo "skeeto/emacs-web-server")
-    )
+;;  ;; simple-httpd
+;;  (leaf simple-httpd
+;;    :straight '(simple-httpd :type git :host github :repo "skeeto/emacs-web-server")
+;;    )
+
   )
 
 ;;;
