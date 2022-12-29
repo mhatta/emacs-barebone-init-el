@@ -599,14 +599,15 @@ See `org-capture-templates' for more information."
     ;; Ditaa jar path
     ;; cf. https://tamura70.hatenadiary.org/entry/20100317/org
     (when (eq system-type 'windows-nt)
-      (setq org-ditaa-jar-path "~/jditaa.jar") ;; CHANGEME
+      (setq org-ditaa-jar-path (expand-file-name "~/jditaa.jar")) ;; CHANGEME
       )
     (when (eq system-type 'gnu/linux)
       (setq org-ditaa-jar-path "/usr/share/ditaa/ditaa.jar")
       )
+    (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
     ;; PlantUML jar path
     (when (eq system-type 'windows-nt)
-      (setq org-plantuml-jar-path "~/plantuml.jar") ;; CHANGEME
+      (setq org-plantuml-jar-path (expand-file-name "~/plantuml.jar")) ;; CHANGEME
       )
     (when (eq system-type 'gnu/linux)
       (setq org-plantuml-jar-path "/usr/share/plantuml/plantuml.jar")
@@ -793,6 +794,22 @@ See `org-capture-templates' for more information."
            ("\\.xml\\'" . web-mode))
     :config
     (flycheck-add-mode 'javascript-eslint 'web-mode)
+    )
+
+  ;; plantuml-mode
+  (leaf plantuml-mode
+    :straight t
+    :leaf-defer t
+    :mode ("\\.plantuml\\'" . plantuml-mode)
+    :config
+    (setq plantuml-default-exec-mode 'jar)
+    ;; PlantUML jar path
+    (when (eq system-type 'windows-nt)
+      (setq plantuml-jar-path (expand-file-name "~/plantuml.jar")) ;; CHANGEME
+      )
+    (when (eq system-type 'gnu/linux)
+      (setq plantuml-jar-path "/usr/share/plantuml/plantuml.jar")
+      )
     )
   
   ;; rainbow-mode
@@ -995,11 +1012,6 @@ See `org-capture-templates' for more information."
   (leaf esup
     :straight t
     )
-
-;;  ;; simple-httpd
-;;  (leaf simple-httpd
-;;    :straight '(simple-httpd :type git :host github :repo "skeeto/emacs-web-server")
-;;    )
 
   )
 
