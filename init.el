@@ -61,7 +61,7 @@
   )
 
 ;;;
-;;; blackout
+;;; Blackout
 ;;;
 (leaf blackout
   :leaf-defer nil
@@ -206,6 +206,7 @@
   ;; Theme (Modus)
   (leaf modus-themes
     :straight t
+    :leaf-defer nil
     :init
     ;; Add all your customizations prior to loading the themes
     (setq modus-themes-italic-constructs t
@@ -217,12 +218,12 @@
     :bind ("<f5>" . modus-themes-toggle)
     )
 
-  ;; Theme ([]zenburn)
-  (leaf zenburn-theme
-    :straight t
-    :config
-    (load-theme 'zenburn t)
-    )
+  ;; ;; Theme (zenburn)
+  ;; (leaf zenburn-theme
+  ;;   :straight t
+  ;;   :config
+  ;;   (load-theme 'zenburn t)
+  ;;   )
   
   ;; dashboard
   (leaf dashboard
@@ -236,7 +237,7 @@
     :if (display-graphic-p)
     :straight t
     :config
-;;    (all-the-icons-install-fonts)
+    ;;    (all-the-icons-install-fonts)
     )
   :custom
   ;; No tool bar
@@ -426,7 +427,7 @@
     :config
     (add-to-list 'completion-at-point-functions #'cape-file)
     (add-to-list 'completion-at-point-functions #'cape-tex)
-    (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+;;    (add-to-list 'completion-at-point-functions #'cape-dabbrev)
     (add-to-list 'completion-at-point-functions #'cape-keyword)
     (add-to-list 'completion-at-point-functions #'cape-abbrev)
     (add-to-list 'completion-at-point-functions #'cape-ispell)
@@ -697,9 +698,10 @@ See `org-capture-templates' for more information."
     :leaf-autoload org2blog-autoloads
     :commands org2blog-user-login
     :config
+    (setq org2blog/wp-use-sourcecode-shortcode t)
     (setq org2blog/wp-blog-alist
           `(("wordpress1"
-             :url "https://www.example.com/xmlrpc.php" ;; CHANGEME
+	     :url "https://www.example.com/xmlrpc.php" ;; CHANGEME
              :username ,(car (auth-source-user-and-password "wordpress1")) ;; CHANGEME
              :password ,(cadr (auth-source-user-and-password "wordpress1")) ;; CHANGEME
 	     )
@@ -835,16 +837,16 @@ See `org-capture-templates' for more information."
     (prog-mode-hook . flycheck-mode)
     :custom ((flycheck-display-errors-delay . 0.3)
              (flycheck-indication-mode . 'left-margin))
+;;    :global-minor-mode global-flycheck-mode ;; CHANGEME
     :config
     (add-hook 'flycheck-mode-hook #'flycheck-set-indication-mode)
-    :global-minor-mode global-flycheck-mode
-    )
-  (leaf flycheck-posframe
-    :straight t
-    :after flycheck
-    :hook (flycheck-mode-hook . flycheck-posframe-mode)
-    :config
-    (flycheck-posframe-configure-pretty-defaults)
+    (leaf flycheck-posframe
+      :straight t
+      :after flycheck
+      :hook (flycheck-mode-hook . flycheck-posframe-mode)
+      :config
+      (flycheck-posframe-configure-pretty-defaults)
+      )
     )
   ;; checker for textlint
   (flycheck-define-checker textlint
@@ -959,6 +961,17 @@ See `org-capture-templates' for more information."
     (atomic-chrome-start-server)
     )
 
+  ;; twittering-mode
+  (leaf twittering-mode
+    :straight t
+    :init
+    (setq twittering-use-master-password t)
+    (setq twittering-allow-insecure-server-cert t)
+    (when (eq system-type 'windows-nt)
+      (setq twittering-curl-program "~/scoop/apps/curl/current/bin/curl.exe")
+      )
+    )
+
   ;; restart-emacs
   (leaf restart-emacs
     :straight t
@@ -975,13 +988,40 @@ See `org-capture-templates' for more information."
   (leaf easy-hugo
     :straight t
     :config
-    (setq easy-hugo-basedir "~/Hugo") ;; CHANGEME
-    (setq easy-hugo-url "https://www.example.com") ;; CHANGEME
+    (setq easy-hugo-basedir "~/Hugo/myhugoblog") ;; CHANGEME
+    (setq easy-hugo-url "https://www.myhugoblog.org") ;; CHANGEME
     (setq easy-hugo-bloglist
-	  '(((easy-hugo-basedir . "https://www2.example.com") ;; CHANGEME
-	     (easy-hugo-url . "https://www2.example.com")))) ;; CHANGEME
+	  '(((easy-hugo-basedir . "~/Hugo/anotherhugoblog") ;; CHANGEME
+	     (easy-hugo-url . "https://www.anotherhugoblog.org")))) ;; CHANGEME
     )
 
+  ;; go-translate
+  (leaf go-translate
+    :straight t
+    :bind ("C-c t" . gts-do-translate)
+    :config
+    (setq gts-translate-list '(("en" "ja") ("ja" "en")))
+    (setq gts-default-translator
+	  (gts-translator
+	   :picker (gts-noprompt-picker)
+	   :engines (list
+		     (gts-deepl-engine
+                      :auth-key "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xx" :pro nil) ;; CHANGEME
+		     (gts-google-engine)
+		     (gts-bing-engine))
+ 	   :render (gts-buffer-render)))
+    )
+
+  ;; elfeed
+  (leaf elfeed
+    :straight t
+    :bind ("C-x w" . elfeed)
+    :config
+    (setq elfeed-feeds
+	  '("http://nullprogram.com/feed/"
+            "https://planet.emacslife.com/atom.xml")) ;; CHANGEME
+    )
+  
   ;; smart-jump
   (leaf smart-jump
     :straight t
@@ -1049,10 +1089,11 @@ See `org-capture-templates' for more information."
 ;;;
 (leaf Local
   :config
-  ;; word-count
+  ;; word-count-mode
   (leaf word-count
     :straight '(word-count :type git :host github
 			   :repo "mhatta/word-count-mode")
+    :bind ("\M-+" . word-count-mode)
     )
 
   ;; lookup-el
