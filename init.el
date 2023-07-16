@@ -950,10 +950,14 @@ See `org-capture-templates' for more information."
     :blackout yas-minor-mode
     :commands yas-global-mode
     :hook (after-init-hook . yas-global-mode)
-    :custom
-    (yas-snippet-dirs . '("~/.emacs.d/yasnippets")) ;; CHANGEME
     )
 
+  ;; yasnippet-snippets
+  (leaf yasnippet-snippets
+    :straight t
+    :after yasnippet
+    )
+  
   ;; atomic-chrome
   (leaf atomic-chrome
     :straight t
