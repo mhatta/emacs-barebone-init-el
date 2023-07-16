@@ -357,8 +357,11 @@
       :straight t
       :config
       (define-key vertico-map (kbd "C-l") #'vertico-directory-up)
-      (define-key vertico-map "\r" #'vertico-directory-enter)  ;; enter dired
-      (define-key vertico-map "\d" #'vertico-directory-delete-char)
+      (define-key vertico-map "RET" #'vertico-directory-enter)  ;; enter dired
+      (define-key vertico-map "DEL" #'vertico-directory-delete-char)
+      (define-key vertico-map "M-DEL" #'vertico-directory-delete-word)
+      :hook
+      (rfn-eshadow-update-overlay-hook . vertico-directory-tidy)
       )
     )
 
