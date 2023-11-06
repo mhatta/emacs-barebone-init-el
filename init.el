@@ -108,6 +108,7 @@
     )
 
   (leaf Fonts
+    :if (display-graphic-p)
     :config
     ;; unicode-fonts
     (leaf unicode-fonts
@@ -133,7 +134,7 @@
     :custom
     '((user-full-name . "Your Name") ;; CHANGEME
       (user-login-name . "yourlogin") ;; CHANGEME
-      (user-mail-address . "you@example.com") ;; CHANGEME
+      (user-mail-address . "yourmail@example.org") ;; CHANGEME
       (inhibit-startup-message . t)
       (delete-by-moving-to-trash . t)
       (kinsoku-limit . 10)
@@ -148,28 +149,43 @@
 ;;;
 (leaf Japanese-IME
   :config
+
   ;; tr-ime (for Windows)
   (leaf tr-ime
     ;; should work on terminal too
-    :if (and (eq system-type 'windows-nt) (display-graphic-p))
+    :if (eq system-type 'windows-nt)
     :straight t
     :config
-    (tr-ime-advanced-install 'no-confirm)
-    (setq default-input-method "W32-IME")
-    (w32-ime-initialize)
-    (setq-default w32-ime-mode-line-state-indicator "[--]")
-    (setq w32-ime-mode-line-state-indicator-list '("[--]" "[あ]" "[--]"))
-    ;; Fonts used during henkan
-    (modify-all-frames-parameters '((ime-font . "Yu Gothic UI-12"))) ;; CHANGEME
-    ;; IME control
-    (wrap-function-to-control-ime 'universal-argument t nil)
-    (wrap-function-to-control-ime 'read-string nil nil)
-    (wrap-function-to-control-ime 'read-char nil nil)
-    (wrap-function-to-control-ime 'read-from-minibuffer nil nil)
-    (wrap-function-to-control-ime 'y-or-n-p nil nil)
-    (wrap-function-to-control-ime 'yes-or-no-p nil nil)
-    (wrap-function-to-control-ime 'map-y-or-n-p nil nil)
-    (wrap-function-to-control-ime 'register-read-with-preview nil nil)
+    ;; Set up w32 frame
+    (defun my-w32-frame-setup ()
+      (when (eq (framep (selected-frame)) 'w32)
+	;; Only needs to be set up once, so remove it from the hook so that it will not be called in the future
+	(remove-hook 'server-after-make-frame-hook #'my-w32-frame-setup)
+	;; Font setting
+	(set-frame-font "Yu Gothic UI-12" nil t) ;; CHANGEME
+	(modify-all-frames-parameters '((ime-font . "Yu Gothic UI-12"))) ;; CHANGEME
+	;; tr-ime
+	(tr-ime-advanced-install 'no-confirm)
+	;; w32-ime setting
+	(when (featurep 'w32-ime)
+	  (setq default-input-method "W32-IME")
+	  (setq-default w32-ime-mode-line-state-indicator "[--]")
+	  (setq w32-ime-mode-line-state-indicator-list '("[--]" "[あ]" "[--]"))
+	  (w32-ime-initialize)
+	  (wrap-function-to-control-ime 'universal-argument t nil)
+	  (wrap-function-to-control-ime 'read-string nil nil)
+	  (wrap-function-to-control-ime 'read-char nil nil)
+	  (wrap-function-to-control-ime 'read-from-minibuffer nil nil)
+	  (wrap-function-to-control-ime 'y-or-n-p nil nil)
+	  (wrap-function-to-control-ime 'yes-or-no-p nil nil)
+	  (wrap-function-to-control-ime 'map-y-or-n-p nil nil)
+	  (wrap-function-to-control-ime 'register-read-with-preview nil nil)))
+      )
+    ;; If the selected frame is w32 (normal startup), configure the frame
+    ;;  If not w32 (console or daemon mode), add configuration function to hooks
+    (if (eq (framep (selected-frame)) 'w32)
+	(my-w32-frame-setup)
+      (add-hook 'server-after-make-frame-hook #'my-w32-frame-setup))
     )
 
   ;; Mozc (for GNU/Linux)
@@ -187,7 +203,7 @@
       (setq mozc-candidate-style 'posframe)
       )
     )
-
+  
   ;; ddskk
   (leaf ddskk
     :straight t
@@ -195,6 +211,7 @@
     (("C-x C-j" . skk-mode)
      ("C-x j"   . skk-mode))
     )
+
   )
 
 ;;;
@@ -217,7 +234,7 @@
     (load-theme 'modus-vivendi :no-confirm) ;; OR modus-operandi
     :bind ("<f5>" . modus-themes-toggle)
     )
-
+  
   ;; ;; Theme (zenburn)
   ;; (leaf zenburn-theme
   ;;   :straight t
@@ -231,14 +248,15 @@
     :config
     (dashboard-setup-startup-hook)
     )
-
+  
   ;; all-the-icons
   (leaf all-the-icons
     :if (display-graphic-p)
     :straight t
     :config
-    ;;    (all-the-icons-install-fonts)
+    ;; (all-the-icons-install-fonts)
     )
+  
   :custom
   ;; No tool bar
   ;;  '((tool-bar-mode . nil)
@@ -251,87 +269,17 @@
 ;;;
 (leaf Minibuf-completion
   :config
+
   ;; corfu
   (leaf corfu
-    :straight (corfu :files (:defaults "extensions/*")
-                     :includes (corfu-info
-				corfu-history
-				corfu-popupinfo)
-		     )
-    :init
-    (setq corfu-auto t
-	  corfu-quit-no-match t
-	  corfu-popupinfo-delay 0.3
-	  completion-cycle-threshold 3
-	  )
-    :global-minor-mode (global-corfu-mode corfu-popupinfo-mode)
-    :config
-    (define-key corfu-map
-		(kbd "SPC") #'corfu-insert-separator)
-    (defun corfu-enable-always-in-minibuffer ()
-      "Enable Corfu in the minibuffer if Vertico/Mct are not active."
-      (unless (or (bound-and-true-p mct--active)
-		  (bound-and-true-p vertico--input)
-		  (eq (current-local-map) read-passwd-map))
-	;; (setq-local corfu-auto nil) Enable/disable auto completion
-	(setq-local corfu-echo-delay nil ;; Disable automatic echo and popup
-                    corfu-popupinfo-delay nil)
-	(corfu-mode 1)))
-    (add-hook 'minibuffer-setup-hook #'corfu-enable-always-in-minibuffer 1)
-
-    (defun corfu-beginning-of-prompt ()
-      "Move to beginning of completion input."
-      (interactive)
-      (corfu--goto -1)
-      (goto-char (car completion-in-region--data)))
-
-    (defun corfu-end-of-prompt ()
-      "Move to end of completion input."
-      (interactive)
-      (corfu--goto -1)
-      (goto-char (cadr completion-in-region--data)))
-    (define-key corfu-map [remap move-beginning-of-line] #'corfu-beginning-of-prompt)
-    (define-key corfu-map [remap move-end-of-line] #'corfu-end-of-prompt)
-
-    (add-hook 'eshell-mode-hook
-              (lambda ()
-		(setq-local corfu-auto nil)
-		(corfu-mode)))
-
-    (defun corfu-send-shell (&rest _)
-      "Send completion candidate when inside comint/eshell."
-      (cond
-       ((and (derived-mode-p 'eshell-mode) (fboundp 'eshell-send-input))
-	(eshell-send-input))
-       ((and (derived-mode-p 'comint-mode)  (fboundp 'comint-send-input))
-	(comint-send-input))))
-
-    (advice-add #'corfu-insert :after #'corfu-send-shell)
-
-    ;; corfu-terminal
-    (leaf corfu-terminal
-      :straight '(corfu-terminal :type git :repo "https://codeberg.org/akib/emacs-corfu-terminal.git")
-      :after corfu
-      :config
-      (unless (display-graphic-p)
-	(corfu-terminal-mode +1))
-      )
-    ;; corfu-history
-    (leaf corfu-history
-      :after corfu
-      :config
-      (with-eval-after-load 'safehist
-	(cl-pushnew 'corfu-history savehist-additional-variables))
-      (corfu-history-mode)
-      )
-    )
-
-  ;; pcmpl-args
-  (leaf pcmpl-args
     :straight t
+    :init
+    (setq completion-cycle-threshold 3)
+    (setq tab-always-indent 'complete)
+    :global-minor-mode (global-corfu-mode)
     )
   
-  ;; Dabbrev
+  ;; dabbrev
   (leaf dabbrev
     :straight t
     :blackout t
@@ -346,11 +294,11 @@
   ;; vertico
   (leaf vertico
     :straight (vertico :files (:defaults "extensions/*")
-                       :includes (vertico-directory)
+		       :includes (vertico-directory)
 		       )
     :init
     (vertico-mode)
-    (setq vertico-count 20)
+    (setq vertico-count 15)
     :config
     ;; vertico-directory
     (leaf vertico-directory
@@ -369,7 +317,10 @@
   (leaf consult
     :straight t
     :bind
-    (("C-s" . consult-line))
+    (("C-x b" . consult-buffer)
+     ("M-g M-g" . consult-goto-line)
+     ("C-c s" . consult-line)
+     ("M-g o" .   consult-outline))
     )
 
   ;; orderless
@@ -385,14 +336,14 @@
             (progn (string-match-p pattern "") pattern)
           (invalid-regexp nil))))
     (orderless-define-completion-style orderless-default-style
-      (orderless-matching-styles '(orderless-initialism
-				   orderless-literal
-				   orderless-regexp)))
+				       (orderless-matching-styles '(orderless-initialism
+								    orderless-literal
+								    orderless-regexp)))
     (orderless-define-completion-style orderless-migemo-style
-      (orderless-matching-styles '(orderless-initialism
-				   orderless-literal
-				   orderless-regexp
-				   orderless-migemo)))
+				       (orderless-matching-styles '(orderless-initialism
+								    orderless-literal
+								    orderless-regexp
+								    orderless-migemo)))
     (setq completion-category-overrides
           '((command (styles orderless-default-style))
             (file (styles orderless-migemo-style))
@@ -415,22 +366,22 @@
     :init
     (define-key minibuffer-local-map (kbd "C-M-a") #'marginalia-cycle)
     )
-
-  ;: all-the-icons-completion
+  
+  ;;: all-the-icons-completion
   (leaf all-the-icons-completion
     :after (marginalia all-the-icons)
     :straight t
     :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
     :global-minor-mode all-the-icons-completion-mode
     )
-  
+
   ;; cape
   (leaf cape
     :straight t
     :config
     (add-to-list 'completion-at-point-functions #'cape-file)
     (add-to-list 'completion-at-point-functions #'cape-tex)
-;;    (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+    ;; (add-to-list 'completion-at-point-functions #'cape-dabbrev)
     (add-to-list 'completion-at-point-functions #'cape-keyword)
     (add-to-list 'completion-at-point-functions #'cape-abbrev)
     (add-to-list 'completion-at-point-functions #'cape-ispell)
@@ -469,7 +420,8 @@
     (leaf embark-consult
       :straight t
       :hook
-      (embark-collect-mode . consult-preview-at-point-mode))
+      (embark-collect-mode . consult-preview-at-point-mode)
+      )
     )
 
   ;; affe
@@ -485,7 +437,7 @@
             (lambda (str) (orderless--highlight affe-orderless-regexp str))))
     (setq affe-regexp-compiler #'affe-orderless-regexp-compiler)
     )
-
+  
   ;; migemo
   (leaf migemo
     :if (executable-find "cmigemo")
@@ -504,6 +456,7 @@
       (setq migemo-dictionary (expand-file-name "~/scoop/apps/cmigemo/current/cmigemo-mingw64/share/migemo/utf-8/migemo-dict")))
     (migemo-init)
     )
+  
   )
 
 ;;;
@@ -516,7 +469,7 @@
     :straight t
     :leaf-defer t
     :init
-    (setq org-directory "~/Org") ;; CHANGEME
+    (setq org-directory "~/ownCloud/Org") ;; CHANGEME
     (unless (file-exists-p org-directory)
       (make-directory org-directory))
     (defun org-buffer-files ()
@@ -593,7 +546,7 @@ See `org-capture-templates' for more information."
     :config
     (org-babel-do-load-languages
      'org-babel-load-languages
-     '((emacs-lisp . t)
+     '((emacs-lisp . t)
        (shell . t)
        (python . t)
        (R . t)
@@ -603,7 +556,7 @@ See `org-capture-templates' for more information."
     ;; Ditaa jar path
     ;; cf. https://tamura70.hatenadiary.org/entry/20100317/org
     (when (eq system-type 'windows-nt)
-      (setq org-ditaa-jar-path (expand-file-name "~/jditaa.jar")) ;; CHANGEME
+      (setq org-ditaa-jar-path (expand-file-name "~/ownCloud/jditaa.jar")) ;; CHANGEME
       )
     (when (eq system-type 'gnu/linux)
       (setq org-ditaa-jar-path "/usr/share/ditaa/ditaa.jar")
@@ -611,7 +564,7 @@ See `org-capture-templates' for more information."
     (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
     ;; PlantUML jar path
     (when (eq system-type 'windows-nt)
-      (setq org-plantuml-jar-path (expand-file-name "~/plantuml.jar")) ;; CHANGEME
+      (setq org-plantuml-jar-path (expand-file-name "~/ownCloud/plantuml.jar")) ;; CHANGEME
       )
     (when (eq system-type 'gnu/linux)
       (setq org-plantuml-jar-path "/usr/share/plantuml/plantuml.jar")
@@ -703,10 +656,10 @@ See `org-capture-templates' for more information."
     :config
     (setq org2blog/wp-use-sourcecode-shortcode t)
     (setq org2blog/wp-blog-alist
-          `(("wordpress1"
-	     :url "https://www.example.com/xmlrpc.php" ;; CHANGEME
-             :username ,(car (auth-source-user-and-password "wordpress1")) ;; CHANGEME
-             :password ,(cadr (auth-source-user-and-password "wordpress1")) ;; CHANGEME
+          `(("wp"
+	     :url "https://www.example.org/xmlrpc.php" ;; CHANGEME
+             :username ,(car (auth-source-user-and-password "wordpress")) ;; CHANGEME
+             :password ,(cadr (auth-source-user-and-password "wordpress")) ;; CHANGEME
 	     )
 	    ))
     (setq org2blog/wp-buffer-template
@@ -810,7 +763,7 @@ See `org-capture-templates' for more information."
     (setq plantuml-default-exec-mode 'jar)
     ;; PlantUML jar path
     (when (eq system-type 'windows-nt)
-      (setq plantuml-jar-path (expand-file-name "~/plantuml.jar")) ;; CHANGEME
+      (setq plantuml-jar-path (expand-file-name "~/ownCloud/plantuml.jar")) ;; CHANGEME
       )
     (when (eq system-type 'gnu/linux)
       (setq plantuml-jar-path "/usr/share/plantuml/plantuml.jar")
@@ -828,7 +781,7 @@ See `org-capture-templates' for more information."
   )
 
 ;;;
-;;; Flycheck
+;;; flycheck
 ;;;
 (leaf Flycheck
   :config
@@ -836,11 +789,9 @@ See `org-capture-templates' for more information."
   (leaf flycheck
     :straight t
     :blackout t
-    :hook
-    (prog-mode-hook . flycheck-mode)
+    :hook (prog-mode-hook . flycheck-mode)
     :custom ((flycheck-display-errors-delay . 0.3)
              (flycheck-indication-mode . 'left-margin))
-;;    :global-minor-mode global-flycheck-mode ;; CHANGEME
     :config
     (add-hook 'flycheck-mode-hook #'flycheck-set-indication-mode)
     (leaf flycheck-posframe
@@ -853,17 +804,18 @@ See `org-capture-templates' for more information."
     )
   ;; checker for textlint
   (flycheck-define-checker textlint
-    "A linter for prose."
+    "A linter for text."
     :command ("textlint" "--format" "unix" source-inplace)
     :error-patterns
     ((warning line-start (file-name) ":" line ":" column ": "
-              (id (one-or-more (not (any " "))))
-              (message (one-or-more not-newline)
-                       (zero-or-more "\n" (any " ") (one-or-more not-newline)))
-              line-end))
-    :modes (text-mode markdown-mode gfm-mode org-mode web-mode))
+	      (id (one-or-more (not (any " "))))
+	      (message (one-or-more not-newline)
+		       (zero-or-more "\n" (any " ") (one-or-more not-newline)))
+	      line-end))
+    :modes (text-mode markdown-mode gfm-mode org-mode web-mode)
+    )
   )
-  
+
 ;;;
 ;;; Tree-sitter
 ;;;
@@ -995,11 +947,11 @@ See `org-capture-templates' for more information."
   (leaf easy-hugo
     :straight t
     :config
-    (setq easy-hugo-basedir "~/Hugo/myhugoblog") ;; CHANGEME
-    (setq easy-hugo-url "https://www.myhugoblog.org") ;; CHANGEME
+    (setq easy-hugo-basedir "~/www.example.org") ;; CHANGEME
+    (setq easy-hugo-url "https://www.example.org") ;; CHANGEME
     (setq easy-hugo-bloglist
-	  '(((easy-hugo-basedir . "~/Hugo/anotherhugoblog") ;; CHANGEME
-	     (easy-hugo-url . "https://www.anotherhugoblog.org")))) ;; CHANGEME
+	  '(((easy-hugo-basedir . "~/www.secondblog.org") ;; CHANGEME
+	     (easy-hugo-url . "https://www.secondblog.org")))) ;; CHANGEME
     )
 
   ;; go-translate
@@ -1013,7 +965,7 @@ See `org-capture-templates' for more information."
 	   :picker (gts-noprompt-picker)
 	   :engines (list
 		     (gts-deepl-engine
-                      :auth-key "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xx" :pro nil) ;; CHANGEME
+                      :auth-key "xxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xx" :pro nil) ;; CHANGEME
 		     (gts-google-engine)
 		     (gts-bing-engine))
  	   :render (gts-buffer-render)))
@@ -1026,7 +978,10 @@ See `org-capture-templates' for more information."
     :config
     (setq elfeed-feeds
 	  '("http://nullprogram.com/feed/"
-            "https://planet.emacslife.com/atom.xml")) ;; CHANGEME
+            "https://planet.emacslife.com/atom.xml"
+	    "https://feeds.arstechnica.com/arstechnica/index"
+	    "https://theconversation.com/articles.atom?language=en"
+	    "https://www.technologyreview.jp/feed/")) ;; CHANGEME
     )
   
   ;; smart-jump
@@ -1059,7 +1014,7 @@ See `org-capture-templates' for more information."
   (leaf esup
     :straight t
     )
-
+  
   )
 
 ;;;
@@ -1069,16 +1024,8 @@ See `org-capture-templates' for more information."
   :straight t
   :require t
   :config
-  (defun my--server-start ()
-    (let ((server-num 0))
-      (while (server-running-p (unless (eq server-num 0) (concat "server" (number-to-string server-num))))
-        (setq server-num (+ server-num 1)))
-      (unless (eq server-num 0)
-        (setq server-name (concat "server" (number-to-string server-num))))
-      (server-start)
-      (setq frame-title-format server-name)))
-  (my--server-start)
-)
+  (server-start)
+  )
 
 ;;;
 ;;; exec-path-from-shell
