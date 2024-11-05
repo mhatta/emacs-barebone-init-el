@@ -116,11 +116,11 @@
       :config
       (unicode-fonts-setup)
       )
-
     (when (eq system-type 'windows-nt)
       (set-face-attribute 'default nil :family "Consolas" :height 120) ;; CHANGEME
       (set-fontset-font 'nil 'japanese-jisx0208
-     			(font-spec :family "Yu Gothic UI"))) ;; CHANGEME
+			(font-spec :family "Yu Gothic UI")) ;; CHANGEME
+      )
     (when (eq system-type 'gnu/linux)
       ;; Install e.g. fonts-inconsolata & fonts-ipaexfont packages on Debian/Ubuntu
       (set-frame-font "Inconsolata-14") ;; CHANGEME
@@ -188,6 +188,7 @@
       (add-hook 'server-after-make-frame-hook #'my-w32-frame-setup))
     )
 
+  
   ;; Mozc (for GNU/Linux)
   (leaf mozc
     :if (eq system-type 'gnu/linux)
@@ -469,7 +470,7 @@
     :straight t
     :leaf-defer t
     :init
-    (setq org-directory "~/ownCloud/Org") ;; CHANGEME
+    (setq org-directory "~/Dropbox/Org") ;; CHANGEME
     (unless (file-exists-p org-directory)
       (make-directory org-directory))
     (defun org-buffer-files ()
@@ -556,7 +557,7 @@ See `org-capture-templates' for more information."
     ;; Ditaa jar path
     ;; cf. https://tamura70.hatenadiary.org/entry/20100317/org
     (when (eq system-type 'windows-nt)
-      (setq org-ditaa-jar-path (expand-file-name "~/ownCloud/jditaa.jar")) ;; CHANGEME
+      (setq org-ditaa-jar-path (expand-file-name "~/Dropbox/jditaa.jar")) ;; CHANGEME
       )
     (when (eq system-type 'gnu/linux)
       (setq org-ditaa-jar-path "/usr/share/ditaa/ditaa.jar")
@@ -564,7 +565,7 @@ See `org-capture-templates' for more information."
     (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
     ;; PlantUML jar path
     (when (eq system-type 'windows-nt)
-      (setq org-plantuml-jar-path (expand-file-name "~/ownCloud/plantuml.jar")) ;; CHANGEME
+      (setq org-plantuml-jar-path (expand-file-name "~/Dropbox/plantuml.jar")) ;; CHANGEME
       )
     (when (eq system-type 'gnu/linux)
       (setq org-plantuml-jar-path "/usr/share/plantuml/plantuml.jar")
@@ -646,6 +647,15 @@ See `org-capture-templates' for more information."
     :require t
     )
 
+;; org-re-reveal
+  (leaf org-re-reveal
+    :straight t
+    :after ox
+    :require t
+    :config
+    (setq org-re-reveal-root (expand-file-name "~/ownCloud/reveal.js"))
+    )
+  
   ;; org2blog
   (leaf org2blog
     :after org
@@ -703,6 +713,7 @@ See `org-capture-templates' for more information."
           org-roam-ui-update-on-save t
           org-roam-ui-open-on-start t)
     )
+
   )
 
 ;;;
@@ -723,6 +734,15 @@ See `org-capture-templates' for more information."
     :leaf-defer t
     )
 
+  ;; Haskell
+  (leaf haskell-mode
+    :straight t
+    :leaf-defer t
+    :mode (("\\.hs\\'" . haskell-mode)
+           ("\\.lhs\\'" . literate-haskell-mode)
+           ("\\.cabal\\'" . haskell-cabal-mode))
+    )
+  
   ;; Markdown
   (leaf Markdown
     :config
@@ -763,7 +783,7 @@ See `org-capture-templates' for more information."
     (setq plantuml-default-exec-mode 'jar)
     ;; PlantUML jar path
     (when (eq system-type 'windows-nt)
-      (setq plantuml-jar-path (expand-file-name "~/ownCloud/plantuml.jar")) ;; CHANGEME
+      (setq plantuml-jar-path (expand-file-name "~/Dropbox/plantuml.jar")) ;; CHANGEME
       )
     (when (eq system-type 'gnu/linux)
       (setq plantuml-jar-path "/usr/share/plantuml/plantuml.jar")
@@ -951,24 +971,23 @@ See `org-capture-templates' for more information."
     (setq easy-hugo-url "https://www.example.org") ;; CHANGEME
     (setq easy-hugo-bloglist
 	  '(((easy-hugo-basedir . "~/www.secondblog.org") ;; CHANGEME
-	     (easy-hugo-url . "https://www.secondblog.org")))) ;; CHANGEME
+	     (easy-hugo-url . "https://www.secondblog")))) ;; CHANGEME
     )
 
   ;; go-translate
   (leaf go-translate
     :straight t
-    :bind ("C-c t" . gts-do-translate)
+    :bind ("C-c t" . gt-do-translate)
     :config
-    (setq gts-translate-list '(("en" "ja") ("ja" "en")))
-    (setq gts-default-translator
-	  (gts-translator
-	   :picker (gts-noprompt-picker)
+    (setq gt-langs '(en ja))
+    (setq gt-default-translator
+	  (gt-translator
+	   :taker (gt-taker :text 'buffer :pick 'paragraph)
 	   :engines (list
-		     (gts-deepl-engine
-                      :auth-key "xxxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:xx" :pro nil) ;; CHANGEME
-		     (gts-google-engine)
-		     (gts-bing-engine))
- 	   :render (gts-buffer-render)))
+		     (gt-deepl-engine :key "yourdeeplkey") ;; CHANGEME
+;;		     (gt-chatgpt-engine :key "yourchatgptkey") ;; CHANGEME
+		     )
+ 	   :render (gt-buffer-render)))
     )
 
   ;; elfeed
@@ -1074,4 +1093,3 @@ See `org-capture-templates' for more information."
 ;;(profiler-stop)
 
 ;;; init.el ends here
-
