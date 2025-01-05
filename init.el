@@ -201,7 +201,7 @@
       :after mozc
       :straight t
       :config
-      (setq mozc-candidate-style 'posframe)
+      (setq mozc-candidate-style 'overlay)
       )
     )
   
@@ -220,6 +220,12 @@
 ;;;
 (leaf Looks
   :config
+  ;; No menu bar
+  ;; (menu-bar-mode -1)
+  ;; No tool bar
+  ;; (tool-bar-mode -1)
+  ;; No scroll bar
+  ;; (scroll-bar-mode -1)
 
   ;; Theme (Modus)
   (leaf modus-themes
@@ -258,11 +264,6 @@
     ;; (all-the-icons-install-fonts)
     )
   
-  :custom
-  ;; No tool bar
-  ;;  '((tool-bar-mode . nil)
-  ;; No scroll bar
-  ;; (set-scroll-bar-mode nil)
   )
 
 ;;;
@@ -514,11 +515,11 @@
     (setq org-capture-templates
 	  '(("t" "Todo" entry (file+headline "gtd.org" "Inbox")
 	     "* TODO %?\n %i\n %a")
-            ("n" "Note" entry (file+headline "notes.org" "Notes")
+               ("n" "Note" entry (file+headline "notes.org" "Notes")
 	     "* %?\nEntered on %U\n %i\n %a")
-            ("j" "Journal" entry (function org-journal-find-location)
+               ("j" "Journal" entry (function org-journal-find-location)
 	     "* %(format-time-string org-journal-time-format)%^{Title}\n%i%?")
-	    ("h" "Hugo post" entry (file+olp "jamhattaorg.org" "Blog Ideas")
+	    ("h" "Hugo post" entry (file+headline "jamhattaorg.org" "Jazz")
              (function org-hugo-new-subtree-post-capture-template))
 	    ))
     ;; Populates only the EXPORT_FILE_NAME property in the inserted headline.
@@ -527,16 +528,15 @@
 	"Returns `org-capture' template string for new Hugo post.
 See `org-capture-templates' for more information."
 	(let* ((title (read-from-minibuffer "Post Title: ")) ;Prompt to enter the post title
-               (fname (org-hugo-slug title)))
+               (fname (org-hugo-slug (concat (format-time-string "%Y-%m-%d") "-" title))))
 	  (mapconcat #'identity
                      `(
-                       ,(concat "*** TODO " title)
-                   ":PROPERTIES:"
-                   ,(concat ":EXPORT_FILE_NAME: " fname)
-		   ":EXPORT_HUGO_CUSTOM_FRONT_MATTER: :share true :featured false :slug :image "
-		   ":EXPORT_DESCRIPTION: "
-                   ":END:"
-                   "%?\n")          ;Place the cursor here finally
+                       ,(concat "** TODO " title)
+                       "    :PROPERTIES:"
+                       ,(concat "    :EXPORT_FILE_NAME: " fname)
+		,(concat "    :EXPORT_HUGO_CUSTOM_FRONT_MATTER: :slug " (org-hugo-slug title) " :image ")
+                       "    :END:"
+                       "    %?\n")          ;Place the cursor here finally
                      "\n"))))
     )
 
@@ -653,21 +653,22 @@ See `org-capture-templates' for more information."
     :after ox
     :require t
     :config
-    (setq org-re-reveal-root (expand-file-name "~/ownCloud/reveal.js"))
+    (setq org-re-reveal-root (expand-file-name "~/Dropbox/reveal.js"))
     )
   
   ;; org2blog
   (leaf org2blog
     :after org
-    ;; the latest version doesn't work
-    :straight (org2blog :type git :host github :repo "sachac/org2blog")
+    ;; If the latest version doesn't work
+    ;;:straight (org2blog :type git :host github :repo "sachac/org2blog")
+    :straight t
     :leaf-autoload org2blog-autoloads
     :commands org2blog-user-login
     :config
     (setq org2blog/wp-use-sourcecode-shortcode t)
     (setq org2blog/wp-blog-alist
           `(("wp"
-	     :url "https://www.example.org/xmlrpc.php" ;; CHANGEME
+	     :url "https://www.example..org/xmlrpc.php" ;; CHANGEME
              :username ,(car (auth-source-user-and-password "wordpress")) ;; CHANGEME
              :password ,(cadr (auth-source-user-and-password "wordpress")) ;; CHANGEME
 	     )
@@ -705,7 +706,7 @@ See `org-capture-templates' for more information."
 
   ;; org-roam-ui
   (leaf org-roam-ui
-    :straight (org-roam-ui :host github :repo "org-roam/org-roam-ui" :branch "main" :files ("*.el" "out"))
+    :straight t
     :after org-roam
     :config
     (setq org-roam-ui-sync-theme t
@@ -967,11 +968,11 @@ See `org-capture-templates' for more information."
   (leaf easy-hugo
     :straight t
     :config
-    (setq easy-hugo-basedir "~/www.example.org") ;; CHANGEME
+    (setq easy-hugo-basedir "~/example.org") ;; CHANGEME
     (setq easy-hugo-url "https://www.example.org") ;; CHANGEME
     (setq easy-hugo-bloglist
-	  '(((easy-hugo-basedir . "~/www.secondblog.org") ;; CHANGEME
-	     (easy-hugo-url . "https://www.secondblog")))) ;; CHANGEME
+	  '(((easy-hugo-basedir . "~/secondblog.org") ;; CHANGEME
+	     (easy-hugo-url . "https://www.secondblog.org")))) ;; CHANGEME
     )
 
   ;; go-translate
@@ -984,8 +985,8 @@ See `org-capture-templates' for more information."
 	  (gt-translator
 	   :taker (gt-taker :text 'buffer :pick 'paragraph)
 	   :engines (list
-		     (gt-deepl-engine :key "yourdeeplkey") ;; CHANGEME
-;;		     (gt-chatgpt-engine :key "yourchatgptkey") ;; CHANGEME
+		     (gt-deepl-engine :key "your-deepl-key") ;; CHANGEME
+;;		     (gt-chatgpt-engine :key "your-chatgpt-key") ;; CHANGEME
 		     )
  	   :render (gt-buffer-render)))
     )
