@@ -428,18 +428,11 @@
   (leaf cape
     :straight t
     :config
-    (add-to-list 'completion-at-point-functions #'cape-file)
-    (add-to-list 'completion-at-point-functions #'cape-tex)
-;;    (add-to-list 'completion-at-point-functions #'cape-dabbrev)
-    (add-to-list 'completion-at-point-functions #'cape-keyword)
-    (add-to-list 'completion-at-point-functions #'cape-abbrev)
-    (add-to-list 'completion-at-point-functions #'cape-ispell)
-    (add-to-list 'completion-at-point-functions #'cape-symbol)
-    ;; Silence the pcomplete capf, no errors or messages!
-    (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-silent)
-    ;; Ensure that pcomplete does not write to the buffer
-    ;; and behaves as a pure `completion-at-point-function'.
-    (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-purify)
+    :bind ("C-c p" . cape-prefix-map)
+    :init
+    (add-hook 'completion-at-point-functions #'cape-dabbrev)
+    (add-hook 'completion-at-point-functions #'cape-file)
+    (add-hook 'completion-at-point-functions #'cape-elisp-block)
     )
 
   ;; kind-icon
@@ -727,8 +720,16 @@ See `org-capture-templates' for more information."
     ("C-c n g" . org-roam-graph)
     ("C-c n i" . org-roam-node-insert)
     ("C-c n c" . org-roam-capture)
-    ;; Dailies
-    ("C-c n j" . org-roam-dailies-capture-today)
+    ("C-c n e" . org-roam-extract-subtree)
+    ;; org-roam-dailies
+    ("C-c n d n" . org-roam-dailies-capture-today)
+    ("C-c n d d" . org-roam-dailies-goto-today)
+    ("C-c n d Y" . org-roam-dailies-capture-yesterday)
+    ("C-c n d y" . org-roam-dailies-goto-yesterday)
+    ("C-c n d T" . org-roam-dailies-capture-yesterday)
+    ("C-c n d t" . org-roam-dailies-goto-tomorrow)    
+    ("C-c n d b" . org-roam-dailies-goto-next-note)
+    ("C-c n d f" . org-roam-dailies-goto-previous-note)
     :config
     (setq org-roam-directory (concat org-directory "/org-roam"))
     (unless (file-exists-p org-directory)
